@@ -15,3 +15,4 @@ use App\Http\Controllers\HomeController;
 */
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/consultor/desempenho',  [ConsultorController::class, 'desempenho'])->name('consultor.desempenho');
