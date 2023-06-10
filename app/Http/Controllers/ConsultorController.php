@@ -61,4 +61,8 @@ class ConsultorController extends Controller
     {
         //
     }
+
+    public function desempenho(){
+        
+    }
 }
