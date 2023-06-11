@@ -1,6 +1,6 @@
 @extends('layouts/app')
 @section('title')
-  CAOL - Controle de Atividades Online - Agence Interativa
+CAOL - Controle de Atividades Online - Agence Interativa
 @endsection
 @section('content')
 
@@ -41,9 +41,103 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            $('#undo_redo').multiselect();
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/jquery.ui.multiselect/1.13.6/jquery.multiselect.css">
+    <script src="https://cdn.jsdelivr.net/jquery.ui.multiselect/1.13.6/jquery.multiselect.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#undo_redo').multiselect({
+                keepRenderingSort: true,
+                afterMoveToRight: function() {
+                    $('#undo_redo_to').multiselect('refresh');
+                },
+                afterMoveToLeft: function() {
+                    $('#undo_redo_to').multiselect('refresh');
+                }
+            });
+            $('#undo_redo_to').multiselect({
+                keepRenderingSort: true,
+                afterMoveToRight: function() {
+                    $('#undo_redo').multiselect('refresh');
+                },
+                afterMoveToLeft: function() {
+                    $('#undo_redo').multiselect('refresh');
+                }
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#undo_redo_rightAll').click(function() {
+                $('#undo_redo').multiselect('selectAll');
+                return false;
+            });
+            $('#undo_redo_rightSelected').click(function() {
+                $('#undo_redo').multiselect('getChecked').each(function() {
+                    $(this).trigger('click');
+                });
+                return false;
+            });
+            $('#undo_redo_leftSelected').click(function() {
+                $('#undo_redo_to').multiselect('getChecked').each(function() {
+                    $(this).trigger('click');
+                });
+                return false;
+            });
+            $('#undo_redo_leftAll').click(function() {
+                $('#undo_redo_to').multiselect('selectAll');
+                return false;
+            });
+            $('#undo_redo_undo').click(function() {
+                $('#undo_redo').multiselect('destroy');
+                $('#undo_redo_to').multiselect('destroy');
+                $('#undo_redo option').prop('selected', false);
+                $('#undo_redo_to option').prop('selected', false);
+                $('#undo_redo').multiselect({
+                    keepRenderingSort: true,
+                    afterMoveToRight: function() {
+                        $('#undo_redo_to').multiselect('refresh');
+                    },
+                    afterMoveToLeft: function() {
+                        $('#undo_redo_to').multiselect('refresh');
+                    }
+                });
+                $('#undo_redo_to').multiselect({
+                    keepRenderingSort: true,
+                    afterMoveToRight: function() {
+                        $('#undo_redo').multiselect('refresh');
+                    },
+                    afterMoveToLeft: function() {
+                        $('#undo_redo').multiselect('refresh');
+                    }
+                });
+                return false;
+            });
+            $('#undo_redo_redo').click(function() {
+                $('#undo_redo').multiselect('destroy');
+                $('#undo_redo_to').multiselect('destroy');
+                $('#undo_redo option').prop('selected', false);
+                $('#undo_redo_to option').prop('selected', false);
+                $('#undo_redo_to').multiselect({
+                    keepRenderingSort: true,
+                    afterMoveToRight: function() {
+                        $('#undo_redo').multiselect('refresh');
+                    },
+                    afterMoveToLeft: function() {
+                        $('#undo_redo').multiselect('refresh');
+                    }
+                });
+                $('#undo_redo').multiselect({
+                    keepRenderingSort: true,
+                    afterMoveToRight: function() {
+                        $('#undo_redo_to').multiselect('refresh');
+                    },
+                    afterMoveToLeft: function() {
+                        $('#undo_redo_to').multiselect('refresh');
+                    }
+                });
+                return false;
+            });
         });
     </script>
 
