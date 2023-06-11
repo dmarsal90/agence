@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\CaoUsuario;
 
 class ConsultorController extends Controller
 {
@@ -11,7 +12,14 @@ class ConsultorController extends Controller
      */
     public function index()
     {
-        //
+        $consultores = CaoUsuario::join('permissao_sistema', 'cao_usuario.co_usuario', '=', 'permissao.co_usuario');
+
+        $consultores = CaoUsuario::join('permissao_sistema', 'cao_usuario.co_usuario', '=', 'permissao_sistema.co_usuario')
+            ->where('permissao_sistema.co_sistema', '1')->where('permissao_sistema.in_ativo', 'S')
+            ->where('permissao_sistema.co_tipo_usuario', '[0,1,2]')->get();
+
+            
+        return view('consultores/consultores', compact('consultores'));
     }
 
     /**
@@ -62,7 +70,7 @@ class ConsultorController extends Controller
         //
     }
 
-    public function desempenho(){
-        
+    public function desempenho()
+    {
     }
 }
