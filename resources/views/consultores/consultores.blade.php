@@ -131,7 +131,7 @@
                 </div>
                 <hr>
 
-                <section id="relatorio" class="mt-5">
+                <section id="relatorio" class="mt-5" style="display: none;">
                     @include('reports/relatorio')
                 </section>
             </div>
