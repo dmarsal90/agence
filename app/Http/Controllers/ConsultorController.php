@@ -88,7 +88,7 @@ class ConsultorController extends Controller
         }
 
 
-        return view('reports/relatorio', ['results' => $results]);
+        return response()->json(['results' => $results]);
     }
 
 
