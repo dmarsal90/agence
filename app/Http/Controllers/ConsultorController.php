@@ -26,11 +26,6 @@ class ConsultorController extends Controller
 
     public function consultoresRelatorio(Request $request)
     {
-        $consultoresDisponiveis = [];
-        // Obtener los consultores seleccionados en el formulario
-
-
-
         // Obtener el valor del campo oculto para los valores seleccionados en el select
         $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
 
@@ -40,20 +35,14 @@ class ConsultorController extends Controller
         $mesFin = $request->input('mesFin');
         $anioFin = $request->input('anioFin');
 
-        $fechaInicio = $anioInicio . '/' . $mesInicio;
-        $fechaFin = $anioFin . '/' . $mesFin;
-
-        // dd($fechaFin);
-
-
+        $fechaInicio = $anioInicio . '-' . $mesInicio;
+        $fechaFin = $anioFin . '-' . $mesFin;
 
         // Calcular los resultados para cada consultor
         $results = [];
         foreach ($consultoresDisponiveisArray as $consultor) {
             $result = [];
-            //dd($consultor);
 
-            // Obtener la receita líquida
             // Obtener la receita líquida
             $receitaLiquida = DB::table('CAO_FATURA')
                 ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
@@ -91,8 +80,66 @@ class ConsultorController extends Controller
         return response()->json(['results' => $results]);
     }
 
-
-    public function desempenho()
+    public function graficoConsultores(Request $request)
     {
+        $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
+
+
+        $mesInicio = $request->input('mesInicio');
+        $anioInicio = $request->input('anioInicio');
+        $mesFin = $request->input('mesFin');
+        $anioFin = $request->input('anioFin');
+
+        $fechaInicio = $anioInicio . '-' . $mesInicio;
+        $fechaFin = $anioFin . '-' . $mesFin;
+
+        dd($fechaInicio);
+
+        // Calcular los resultados para cada consultor
+        $results = [];
+        if ($consultoresDisponiveisArray) {
+            foreach ($consultoresDisponiveisArray as $consultor) {
+                $result = [];
+                $totalCustoFixo = 0;
+
+                // Obtener la receita líquida
+                $receitaLiquida = DB::table('CAO_FATURA')
+                    ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
+                    ->where('CAO_OS.CO_USUARIO', '=', $consultor)
+                    ->whereBetween(DB::raw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m")'), [$fechaInicio, $fechaFin])
+                    ->select(DB::raw('SUM(CAO_FATURA.VALOR * (1 - CAO_FATURA.TOTAL_IMP_INC / 100)) AS receitaLiquida'))
+                    ->value('receitaLiquida');
+
+                $custoFixo = DB::table('CAO_SALARIO')
+                    ->where('CO_USUARIO', '=', $consultor)
+                    ->value('BRUT_SALARIO');
+
+                $totalCustoFixo += $custoFixo;
+                $cantConsultores = count($consultoresDisponiveisArray);
+                $custoFixoMedio = $totalCustoFixo / $cantConsultores;
+
+
+                // Agregar los resultados al arreglo
+                $result['consultor'] = $consultor;
+                $result['receitaLiquida'] = $receitaLiquida;
+                $result['custoFixoMedio'] = $custoFixoMedio;
+                $results[] = $result;
+            }
+        }
+
+        $chartData = [
+            'labels' => [],  // Array to store the labels for X-axis (e.g., months/years)
+            'receitaLiquida' => [],  // Array to store the receitaLiquida values for the bars
+            'custoFixoMedio' => [],  // Array to store the custoFixoMedio values for the line
+        ];
+
+        // Populate the chartData arrays
+        foreach ($results as $result) {
+            $chartData['labels'][] = $result['consultor'];
+            $chartData['receitaLiquida'][] = $result['receitaLiquida'];
+            $chartData['custoFixoMedio'][] = $result['custoFixoMedio'];
+        }
+
+        return response()->json(['results' => $chartData]);
     }
 }
