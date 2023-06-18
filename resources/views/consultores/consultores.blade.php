@@ -16,6 +16,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                         <div class="col-md-11 d-flex justify-content-start align-items-center">
                             <div class="me-2">
                                 <select id="selectPeriodoInicial" class="form-select shadow-sm h-72 max-h-96 w-auto">
+                                    <option selected>Selecione o mês</option>
                                     <option>Jan</option>
                                     <option>Fev</option>
                                     <option>Mar</option>
@@ -24,7 +25,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                                     <option>Jun</option>
                                     <option>Jul</option>
                                     <option>Ago</option>
-                                    <option selected>Set</option>
+                                    <option>Set</option>
                                     <option>Out</option>
                                     <option>Nov</option>
                                     <option>Dez</option>
@@ -32,16 +33,18 @@ CAOL - Controle de Atividades Online - Agence Interativa
                             </div>
                             <div class="me-2">
                                 <select id="selectAnoInicial" class="form-select shadow-sm h-72 max-h-96 w-auto">
+                                    <option selected>Selecione o ano</option>
                                     <option>2003</option>
                                     <option>2004</option>
                                     <option>2005</option>
                                     <option>2006</option>
-                                    <option selected>2007</option>
+                                    <option>2007</option>
                                 </select>
                             </div>
                             <span class="align-items-center">a</span>
                             <div class="ms-2 me-2">
                                 <select id="selectPeriodoFinal" class="form-select shadow-sm h-72 max-h-96 w-auto">
+                                    <option selected>Selecione o mês</option>
                                     <option>Jan</option>
                                     <option>Fev</option>
                                     <option>Mar</option>
@@ -50,7 +53,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                                     <option>Jun</option>
                                     <option>Jul</option>
                                     <option>Ago</option>
-                                    <option selected>Set</option>
+                                    <option>Set</option>
                                     <option>Out</option>
                                     <option>Nov</option>
                                     <option>Dez</option>
@@ -58,11 +61,12 @@ CAOL - Controle de Atividades Online - Agence Interativa
                             </div>
                             <div class="me-2">
                                 <select id="selectAnoFinal" class="form-select shadow-sm h-72 max-h-96 w-auto">
+                                    <option selected>Selecione o ano</option>
                                     <option>2003</option>
                                     <option>2004</option>
                                     <option>2005</option>
                                     <option>2006</option>
-                                    <option selected>2007</option>
+                                    <option>2007</option>
                                 </select>
                             </div>
                         </div>
@@ -108,10 +112,31 @@ CAOL - Controle de Atividades Online - Agence Interativa
 
                                 </form>
 
-                                <button type="button" class="btn btn-secondary btn-sm mb-2 custom-btn-size"><i class="fas fa-chart-bar"></i> Gráfico
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-sm custom-btn-size"><i class="fas fa-chart-pie"></i> Pizza
-                                </button>
+                                <form id="form-grafico" method="POST" action="{{ route('grafico') }}">
+                                    @csrf
+                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArray">
+                                    <input type="hidden" name="mesInicio" id="mesInicio">
+                                    <input type="hidden" name="anioInicio" id="anioInicio">
+                                    <input type="hidden" name="mesFin" id="mesFin">
+                                    <input type="hidden" name="anioFin" id="anioFin">
+                                    <button type="submit" id="graficobutton" class="btn btn-secondary btn-sm mb-2 custom-btn-size">
+                                        <i class="fas fa-chart-bar"></i> Gráfico
+                                    </button>
+
+                                </form>
+                                <form id="form-pizza" method="POST" action="{{ route('relatorio') }}">
+                                    @csrf
+                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArray">
+                                    <input type="hidden" name="mesInicio" id="mesInicio">
+                                    <input type="hidden" name="anioInicio" id="anioInicio">
+                                    <input type="hidden" name="mesFin" id="mesFin">
+                                    <input type="hidden" name="anioFin" id="anioFin">
+                                    <button type="button" id="pizzabutton" class="btn btn-secondary btn-sm custom-btn-size"><i class="fas fa-chart-pie"></i> Pizza
+                                    </button>
+                                    </button>
+
+                                </form>
+
                             </div>
                         </div>
                     </div>
@@ -136,13 +161,18 @@ CAOL - Controle de Atividades Online - Agence Interativa
                 </table>
 
             </section>
+
+            <section id="grafico" class="mt-5" style="display: none;">
+                <h4>Resultados</h4>
+                <canvas id="myChart"></canvas>
+            </section>
         </div>
     </div>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script src="{{ asset('js/script.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         $(document).ready(function() {
             // Obtener los selectores de los select
@@ -189,8 +219,23 @@ CAOL - Controle de Atividades Online - Agence Interativa
                 $('#form-relatorio').submit();
                 //enviarFormulario();
             });
+            $('#graficobutton').click(function() {
+                let valores = $('#undo_redo_to option').map(function() {
+                    return $(this).val();
+                }).get();
+                console.log(valores);
+                actualizarCamposOcultos();
+                // $('#form-grafico').submit();
+                enviarFormularioGrafico();
+            });
 
         });
+
+
+        selectPeriodoInicial.addEventListener('change', actualizarCamposOcultos);
+        selectAnoInicial.addEventListener('change', actualizarCamposOcultos);
+        selectPeriodoFinal.addEventListener('change', actualizarCamposOcultos);
+        selectAnoFinal.addEventListener('change', actualizarCamposOcultos);
 
         function actualizarCamposOcultos() {
             // Actualizar los valores de los campos ocultos con los valores seleccionados en los selects
@@ -201,10 +246,10 @@ CAOL - Controle de Atividades Online - Agence Interativa
 
             // Actualizar el campo oculto de consultoresDisponiveisArray con todos los valores del dropdown
             var consultoresDisponiveisArray = document.getElementById('consultoresDisponiveisArray');
-            var valoresDropdown = $('#undo_redo_to option').map(function() {
+            var valoresSelect = $('#undo_redo_to option').map(function() {
                 return $(this).val();
             }).get();
-            consultoresDisponiveisArray.value = JSON.stringify(valoresDropdown);
+            consultoresDisponiveisArray.value = JSON.stringify(valoresSelect);
         }
 
         function enviarFormulario() {
@@ -219,10 +264,19 @@ CAOL - Controle de Atividades Online - Agence Interativa
             // Enviar el formulario
             formulario.submit();
         }
+
+        function enviarFormularioGrafico() {
+            // Actualizar los campos ocultos antes de enviar el formulario
+            actualizarCamposOcultos();
+            // Obtener el formulario
+            var formulario = document.getElementById('form-grafico');
+            // Enviar el formulario
+            formulario.submit();
+        }
     </script>
     <script>
         $(document).ready(function() {
-            $('form').on('submit', function(event) {
+            $('#form-relatorio').on('submit', function(event) {
                 event.preventDefault();
                 var formData = $(this).serialize();
 
@@ -255,5 +309,28 @@ CAOL - Controle de Atividades Online - Agence Interativa
             });
         });
     </script>
+    <script>
+        $(document).ready(function() {
+            $('#form-grafico').on('submit', function(event) {
+                event.preventDefault();
+                var formData = $(this).serialize();
+
+                $.ajax({
+                    method: 'POST',
+                    url: '{{ route("grafico") }}',
+                    data: formData,
+                    success: function(response) {
+                        console.log(response);
+                        $('#grafico').show();
+                        console.log('cargo bien');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                    }
+                });
+            });
+        });
+    </script>
+
     @endsection
 </body>
