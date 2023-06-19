@@ -20,3 +20,4 @@ Route::get('/consultor', [ConsultorController::class, 'index'])->name('consultor
 Route::post('/consultor/desempenho',  [ConsultorController::class, 'desempenho'])->name('consultor.desempenho');
 Route::post('/relatorio', [ConsultorController::class, 'consultoresRelatorio'])->name('relatorio');
 Route::post('/grafico', [ConsultorController::class, 'graficoConsultores'])->name('grafico');
+Route::post('/pizza', [ConsultorController::class, 'pizzaConsultores'])->name('pizza');
