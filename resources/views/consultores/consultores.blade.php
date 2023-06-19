@@ -124,7 +124,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                                     </button>
 
                                 </form>
-                                <form id="form-pizza" method="POST" action="{{ route('relatorio') }}">
+                                <form id="form-pizza" method="POST" action="{{ route('pizza') }}">
                                     @csrf
                                     <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArrayPizza">
                                     <input type="hidden" name="mesInicio" id="mesInicioPizza">
@@ -274,6 +274,22 @@ CAOL - Controle de Atividades Online - Agence Interativa
 
         }
 
+        function actualizarCamposOcultosPizza() {
+            // Actualizar los valores de los campos ocultos con los valores seleccionados en los selects
+            document.getElementById('mesInicioPizza').value = selectPeriodoInicial.value;
+            document.getElementById('anioInicioPizza').value = selectAnoInicial.value;
+            document.getElementById('mesFinPizza').value = selectPeriodoFinal.value;
+            document.getElementById('anioFinPizza').value = selectAnoFinal.value;
+
+            // Actualizar el campo oculto de consultoresDisponiveisArray con todos los valores del dropdown
+            var consultoresDisponiveisArray = document.getElementById('consultoresDisponiveisArrayPizza');
+            var valoresSelect = $('#undo_redo_to option').map(function() {
+                return $(this).val();
+            }).get();
+            consultoresDisponiveisArray.value = JSON.stringify(valoresSelect);
+
+        }
+
         function enviarFormulario() {
             // Actualizar los campos ocultos antes de enviar el formulario
             actualizarCamposOcultos();
@@ -291,6 +307,15 @@ CAOL - Controle de Atividades Online - Agence Interativa
             actualizarCamposOcultosGrafico();
             // Obtener el formulario
             var formulario = document.getElementById('form-grafico');
+            // Enviar el formulario
+            formulario.submit();
+        }
+
+        function enviarFormularioPizza() {
+            // Actualizar los campos ocultos antes de enviar el formulario
+            actualizarCamposOcultosPizza();
+            // Obtener el formulario
+            var formulario = document.getElementById('form-pizza');
             // Enviar el formulario
             formulario.submit();
         }
