@@ -114,11 +114,11 @@ CAOL - Controle de Atividades Online - Agence Interativa
 
                                 <form id="form-grafico" method="POST" action="{{ route('grafico') }}">
                                     @csrf
-                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArray">
-                                    <input type="hidden" name="mesInicio" id="mesInicio">
-                                    <input type="hidden" name="anioInicio" id="anioInicio">
-                                    <input type="hidden" name="mesFin" id="mesFin">
-                                    <input type="hidden" name="anioFin" id="anioFin">
+                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArrayGrafico">
+                                    <input type="hidden" name="mesInicio" id="mesInicioGrafico">
+                                    <input type="hidden" name="anioInicio" id="anioInicioGrafico">
+                                    <input type="hidden" name="mesFin" id="mesFinGrafico">
+                                    <input type="hidden" name="anioFin" id="anioFinGrafico">
                                     <button type="submit" id="graficobutton" class="btn btn-secondary btn-sm mb-2 custom-btn-size">
                                         <i class="fas fa-chart-bar"></i> Gráfico
                                     </button>
@@ -126,11 +126,11 @@ CAOL - Controle de Atividades Online - Agence Interativa
                                 </form>
                                 <form id="form-pizza" method="POST" action="{{ route('relatorio') }}">
                                     @csrf
-                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArray">
-                                    <input type="hidden" name="mesInicio" id="mesInicio">
-                                    <input type="hidden" name="anioInicio" id="anioInicio">
-                                    <input type="hidden" name="mesFin" id="mesFin">
-                                    <input type="hidden" name="anioFin" id="anioFin">
+                                    <input type="hidden" name="consultores_disponibles[]" id="consultoresDisponiveisArrayPizza">
+                                    <input type="hidden" name="mesInicio" id="mesInicioPizza">
+                                    <input type="hidden" name="anioInicio" id="anioInicioPizza">
+                                    <input type="hidden" name="mesFin" id="mesFinPizza">
+                                    <input type="hidden" name="anioFin" id="anioFinPizza">
                                     <button type="button" id="pizzabutton" class="btn btn-secondary btn-sm custom-btn-size"><i class="fas fa-chart-pie"></i> Pizza
                                     </button>
                                     </button>
@@ -162,9 +162,14 @@ CAOL - Controle de Atividades Online - Agence Interativa
 
             </section>
 
-            <section id="grafico" class="mt-5" style="display: none;">
+            <section id="graficoConsultores" class="mt-5 mb-" style="display: none;">
                 <h4>Resultados</h4>
                 <canvas id="myChart"></canvas>
+            </section>
+
+            <section id="pizzaConsultores" class="mt-5 mb-" style="display: none;">
+                <h4>Resultados</h4>
+                <canvas id="myPizzaChart"></canvas>
             </section>
         </div>
     </div>
@@ -225,7 +230,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                 }).get();
                 console.log(valores);
                 actualizarCamposOcultos();
-                // $('#form-grafico').submit();
+                //  $('#form-grafico').submit();
                 enviarFormularioGrafico();
             });
 
@@ -250,6 +255,23 @@ CAOL - Controle de Atividades Online - Agence Interativa
                 return $(this).val();
             }).get();
             consultoresDisponiveisArray.value = JSON.stringify(valoresSelect);
+
+        }
+
+        function actualizarCamposOcultosGrafico() {
+            // Actualizar los valores de los campos ocultos con los valores seleccionados en los selects
+            document.getElementById('mesInicioGrafico').value = selectPeriodoInicial.value;
+            document.getElementById('anioInicioGrafico').value = selectAnoInicial.value;
+            document.getElementById('mesFinGrafico').value = selectPeriodoFinal.value;
+            document.getElementById('anioFinGrafico').value = selectAnoFinal.value;
+
+            // Actualizar el campo oculto de consultoresDisponiveisArray con todos los valores del dropdown
+            var consultoresDisponiveisArray = document.getElementById('consultoresDisponiveisArrayGrafico');
+            var valoresSelect = $('#undo_redo_to option').map(function() {
+                return $(this).val();
+            }).get();
+            consultoresDisponiveisArray.value = JSON.stringify(valoresSelect);
+
         }
 
         function enviarFormulario() {
@@ -259,15 +281,14 @@ CAOL - Controle de Atividades Online - Agence Interativa
             // Obtener el formulario
             var formulario = document.getElementById('form-relatorio');
 
-            console.log($('#undo_redo_to option'));
-
             // Enviar el formulario
             formulario.submit();
         }
 
+
         function enviarFormularioGrafico() {
             // Actualizar los campos ocultos antes de enviar el formulario
-            actualizarCamposOcultos();
+            actualizarCamposOcultosGrafico();
             // Obtener el formulario
             var formulario = document.getElementById('form-grafico');
             // Enviar el formulario
@@ -287,6 +308,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                     success: function(response) {
                         console.log(response);
                         $('#relatorioTable').show();
+                        $('#graficoConsultores').hide();
 
                         // Limpiar la tabla antes de agregar nuevas filas
                         $('#relatorioTable tbody').empty();
@@ -309,28 +331,155 @@ CAOL - Controle de Atividades Online - Agence Interativa
             });
         });
     </script>
-    <script>
-        $(document).ready(function() {
-            $('#form-grafico').on('submit', function(event) {
-                event.preventDefault();
-                var formData = $(this).serialize();
+<script>
+    $(document).ready(function() {
+        $('#form-grafico').on('submit', function(event) {
+            event.preventDefault();
+            var formData = $(this).serialize();
 
-                $.ajax({
-                    method: 'POST',
-                    url: '{{ route("grafico") }}',
-                    data: formData,
-                    success: function(response) {
-                        console.log(response);
-                        $('#grafico').show();
-                        console.log('cargo bien');
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.log(textStatus, errorThrown);
+            $.ajax({
+                method: 'POST',
+                url: '{{ route("grafico") }}',
+                data: formData,
+                success: function(response) {
+                    console.log(response);
+                    var chartData = response.results;
+
+                    // Parse the start and end dates
+                    var startDate = new Date(chartData.fechaInicio);
+                    var endDate = new Date(chartData.fechaFin);
+
+                    // Generate an array of dates between the start and end dates
+                    var dates = [];
+                    var currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+                    while (currentDate <= endDate) {
+                        dates.push(currentDate);
+                        currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
                     }
-                });
+
+                    // Format the date labels based on the range of dates
+                    var dateLabels = dates.map(function(date) {
+                        return date.toLocaleString('default', {
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    });
+
+                    // Create an array of revenue data for each consultant
+                    var revenueData = [];
+                    for (var i = 0; i < chartData.labels.length; i++) {
+                        var consultantRevenue = Array(dates.length).fill(0);
+                        if (Array.isArray(chartData.receitaLiquida[i])) {
+                            for (var j = 0; j < chartData.receitaLiquida[i].length; j++) {
+                                var dateIndex = dates.indexOf(new Date(chartData.receitaLiquida[i][j][0]));
+                                if (dateIndex >= 0) {
+                                    consultantRevenue[dateIndex] = chartData.receitaLiquida[i][j][1];
+                                }
+                            }
+                        }
+                        revenueData.push({
+                            label: chartData.labels[i] + ' - Receita Líquida',
+                            data: consultantRevenue,
+                            backgroundColor: getRandomColor(),
+                            borderWidth: 1
+                        });
+                    }
+
+                    // Create an array of fixed cost data for each consultant
+                    var fixedCostData = [];
+                    for (var i = 0; i < chartData.labels.length; i++) {
+                        var consultantFixedCost = Array(dates.length).fill(chartData.custoFixoMedio[i]);
+                        fixedCostData.push({
+                            label: chartData.labels[i] + ' - Custo Fixo Médio',
+                            data: consultantFixedCost,
+                            backgroundColor: getRandomColor(),
+                            borderWidth: 1
+                        });
+                    }
+
+                    $('#relatorioTable').hide();
+                    $('#graficoConsultores').show();
+                    $('#graficoConsultores').html('<canvas id="myChart"></canvas>');
+
+                    var ctx = document.getElementById('myChart').getContext('2d');
+
+                    var chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dateLabels,
+                            datasets: revenueData.concat(fixedCostData)
+                        },
+                        options: {
+                            scales: {
+                                xAxes: [{
+                                    stacked: false,
+                                    ticks: {
+                                        beginAtZero: true
+                                    }
+                                }],
+                                yAxes: [{
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    id: 'y-axis-1',
+                                    scaleLabel: {
+                                        display: true,
+                                        labelString: 'Receita Líquida / Custo Fixo Médio'
+                                    },
+                                    ticks: {
+                                        beginAtZero: true,
+                                        callback: function(value, index, values) {
+                                            return 'R$' + value.toFixed(2);
+                                        }
+                                    }
+                                }]
+                            },
+                            title: {
+                                display: true,
+                                text: 'Performance Comercial'
+                            },
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        generateLabels: function(chart) {
+                                            var data = chart.data;
+                                            if (data.labels.length && data.datasets.length) {
+                                                return data.datasets.map(function(dataset, i) {
+                                                        // Add label for revenue data
+                                                        return {
+                                                            text: dataset.label,
+                                                            fillStyle: dataset.backgroundColor,
+                                                            strokeStyle: dataset.borderColor,
+                                                            lineWidth: dataset.borderWidth,
+                                                            hidden: dataset.hidden,
+                                                            index: i
+                                                        };
+                                                });
+                                            }
+                                            return [];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                }
             });
         });
-    </script>
+    });
+
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+</script>
 
     @endsection
 </body>
