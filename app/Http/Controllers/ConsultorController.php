@@ -150,4 +150,42 @@ class ConsultorController extends Controller
 
         return response()->json(['results' => $chartData]);
     }
+
+    public function pizzaConsultores(Request $request)
+    {
+        // Obtener el valor del campo oculto para los valores seleccionados en el select
+        $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
+
+
+        $mesInicio = $request->input('mesInicio');
+        $anioInicio = $request->input('anioInicio');
+        $mesFin = $request->input('mesFin');
+        $anioFin = $request->input('anioFin');
+
+        $fechaInicio = $anioInicio . '-' . $mesInicio;
+        $fechaFin = $anioFin . '-' . $mesFin;
+
+        // Calcular los resultados para cada consultor
+        $results = [];
+        foreach ($consultoresDisponiveisArray as $consultor) {
+            $result = [];
+
+            // Obtener la receita líquida
+            $receitaLiquida = DB::table('CAO_FATURA')
+                ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
+                ->where('CAO_OS.CO_USUARIO', '=', $consultor)
+                ->whereBetween(DB::raw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m")'), [$fechaInicio, $fechaFin])
+                ->select(DB::raw('SUM(CAO_FATURA.VALOR * (1 - CAO_FATURA.TOTAL_IMP_INC / 100)) AS receitaLiquida'))
+                ->value('receitaLiquida');
+
+            // Agregar los resultados al arreglo
+            $result['consultor'] = CaoUsuario::find($consultor);
+            $result['receitaLiquida'] = $receitaLiquida;
+            
+            $results[] = $result;
+        }
+
+
+        return response()->json(['results' => $results]);
+    }
 }
