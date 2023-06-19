@@ -93,7 +93,6 @@ class ConsultorController extends Controller
         $fechaInicio = $anioInicio . '-' . $mesInicio;
         $fechaFin = $anioFin . '-' . $mesFin;
 
-        dd($fechaInicio);
 
         // Calcular los resultados para cada consultor
         $results = [];
@@ -123,15 +122,24 @@ class ConsultorController extends Controller
                 $result['consultor'] = $consultor;
                 $result['receitaLiquida'] = $receitaLiquida;
                 $result['custoFixoMedio'] = $custoFixoMedio;
+                $result['fechaInicio'] = $fechaInicio;
+                $result['fechaFin'] = $fechaFin;
                 $results[] = $result;
             }
         }
+
+        $fechaInicio = date('M Y', strtotime($fechaInicio));
+        $fechaFin = date('M Y', strtotime($fechaFin));
+
 
         $chartData = [
             'labels' => [],  // Array to store the labels for X-axis (e.g., months/years)
             'receitaLiquida' => [],  // Array to store the receitaLiquida values for the bars
             'custoFixoMedio' => [],  // Array to store the custoFixoMedio values for the line
+            'fechaInicio' => $fechaInicio,
+            'fechaFin' => $fechaFin,
         ];
+
 
         // Populate the chartData arrays
         foreach ($results as $result) {
