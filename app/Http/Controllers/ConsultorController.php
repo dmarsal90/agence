@@ -179,9 +179,10 @@ class ConsultorController extends Controller
                 ->value('receitaLiquida');
 
             // Agregar los resultados al arreglo
-            $result['consultor'] = CaoUsuario::find($consultor);
+            $consultor=CaoUsuario::find($consultor);
+            $result['consultor'] = $consultor->no_usuario;
             $result['receitaLiquida'] = $receitaLiquida;
-            
+
             $results[] = $result;
         }
 
