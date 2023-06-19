@@ -131,7 +131,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                                     <input type="hidden" name="anioInicio" id="anioInicioPizza">
                                     <input type="hidden" name="mesFin" id="mesFinPizza">
                                     <input type="hidden" name="anioFin" id="anioFinPizza">
-                                    <button type="button" id="pizzabutton" class="btn btn-secondary btn-sm custom-btn-size"><i class="fas fa-chart-pie"></i> Pizza
+                                    <button type="submit" id="pizzabutton" class="btn btn-secondary btn-sm custom-btn-size"><i class="fas fa-chart-pie"></i> Pizza
                                     </button>
                                     </button>
 
@@ -232,6 +232,16 @@ CAOL - Controle de Atividades Online - Agence Interativa
                 actualizarCamposOcultos();
                 //  $('#form-grafico').submit();
                 enviarFormularioGrafico();
+            });
+
+            $('#pizzabutton').click(function() {
+                let valores = $('#undo_redo_to option').map(function() {
+                    return $(this).val();
+                }).get();
+                console.log(valores);
+                actualizarCamposOcultos();
+                //  $('#form-grafico').submit();
+                enviarFormularioPizza();
             });
 
         });
