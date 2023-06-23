@@ -163,8 +163,8 @@ CAOL - Controle de Atividades Online - Agence Interativa
             </section>
 
             <section id="graficoConsultores" class="mt-5 mb-5" style="display: none;">
-                <h4>Grfico</h4>
-                <canvas id="myChart"></canvas>
+                <h4>Gráfico</h4>
+                <canvas id="grafico"></canvas>
             </section>
 
             <section id="graficoPizza" class="mt-5 mb-5 h-100 max-h-150" style="display: none;">
@@ -354,7 +354,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                             var row = $('<tr>');
                             $('<td>').html(result.consultor.no_usuario).appendTo(row);
                             $('<td>').html(result.comissao).appendTo(row);
-                            $('<td>').html(result.custoFixo).appendTo(row);
+                            $('<td>').html(result.custoFixo ? result.custoFixo : 0).appendTo(row);
                             $('<td>').html(result.lucro).appendTo(row);
                             $('<td>').html(result.receitaLiquida).appendTo(row);
                             $('#relatorioTable tbody').append(row);
@@ -372,133 +372,181 @@ CAOL - Controle de Atividades Online - Agence Interativa
             $('#form-grafico').on('submit', function(event) {
                 event.preventDefault();
                 var formData = $(this).serialize();
-
                 $.ajax({
                     method: 'POST',
                     url: '{{ route("grafico") }}',
                     data: formData,
                     success: function(response) {
-                        console.log(response);
-                        var chartData = response.results;
-
-                        // Parse the start and end dates
-                        var startDate = new Date(chartData.fechaInicio);
-                        var endDate = new Date(chartData.fechaFin);
-
-                        // Generate an array of dates between the start and end dates
-                        var dates = [];
-                        var currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-                        while (currentDate <= endDate) {
-                            dates.push(currentDate);
-                            currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-                        }
-
-                        // Format the date labels based on the range of dates
-                        var dateLabels = dates.map(function(date) {
-                            return date.toLocaleString('default', {
-                                month: 'short',
-                                year: 'numeric'
-                            });
-                        });
-
-                        // Create an array of revenue data for each consultant
-                        var revenueData = [];
-                        for (var i = 0; i < chartData.labels.length; i++) {
-                            var consultantRevenue = Array(dates.length).fill(0);
-                            if (Array.isArray(chartData.receitaLiquida[i])) {
-                                for (var j = 0; j < chartData.receitaLiquida[i].length; j++) {
-                                    var dateIndex = dates.indexOf(new Date(chartData.receitaLiquida[i][j][0]));
-                                    if (dateIndex >= 0) {
-                                        consultantRevenue[dateIndex] = chartData.receitaLiquida[i][j][1];
-                                    }
-                                }
-                            }
-                            revenueData.push({
-                                label: chartData.labels[i] + ' - Receita Líquida',
-                                data: consultantRevenue,
-                                backgroundColor: getRandomColor(),
-                                borderWidth: 1
-                            });
-                        }
-
-                        // Create an array of fixed cost data for each consultant
-                        var fixedCostData = [];
-                        for (var i = 0; i < chartData.labels.length; i++) {
-                            var consultantFixedCost = Array(dates.length).fill(chartData.custoFixoMedio[i]);
-                            fixedCostData.push({
-                                label: chartData.labels[i] + ' - Custo Fixo Médio',
-                                data: consultantFixedCost,
-                                backgroundColor: getRandomColor(),
-                                borderWidth: 1
-                            });
-                        }
-
+                        // Mostrar el contenedor del gráfico y ocultar otros elementos
                         $('#relatorioTable').hide();
-                        $('#graficoPizza').hide();
                         $('#graficoConsultores').show();
-                        $('#graficoConsultores').html('<canvas id="myChart"></canvas>');
+                        $('#graficoPizza').hide();
 
-                        var ctx = document.getElementById('myChart').getContext('2d');
+                        var labels = response.results.labels;
+                        var datasets = response.results.datasets;
+                        var custoFixoMedio = response.results.custoFixoMedio;
 
-                        var chart = new Chart(ctx, {
+                        // Función para generar colores aleatorios en formato hexadecimal
+                        function getRandomColor() {
+                            var letters = '0123456789ABCDEF';
+                            var color = '#';
+                            for (var i = 0; i < 6; i++) {
+                                color += letters[Math.floor(Math.random() * 16)];
+                            }
+                            return color;
+                        }
+
+                        // Crear un arreglo de colores aleatorios para los consultores
+                        var colores = [];
+                        for (var i = 0; i < datasets.length; i++) {
+                            colores.push(getRandomColor());
+                        }
+
+                        // Asignar un color aleatorio a cada dataset
+                        for (var i = 0; i < datasets.length; i++) {
+                            datasets[i].backgroundColor = colores[i];
+                            datasets[i].borderColor = colores[i];
+                            datasets[i].borderWidth = 1;
+                        }
+
+                        // Eliminar las etiquetas repetidas del eje x
+                        var uniqueLabels = [];
+                        for (var i = 0; i < labels.length; i++) {
+                            if (!uniqueLabels.includes(labels[i])) {
+                                uniqueLabels.push(labels[i]);
+                            }
+                        }
+
+                        var config = {
                             type: 'bar',
                             data: {
-                                labels: dateLabels,
-                                datasets: revenueData.concat(fixedCostData)
+                                labels: uniqueLabels,
+                                datasets: datasets
                             },
                             options: {
-                                scales: {
-                                    xAxes: [{
-                                        stacked: false,
-                                        ticks: {
-                                            beginAtZero: true
-                                        }
-                                    }],
-                                    yAxes: [{
-                                        type: 'linear',
-                                        display: true,
-                                        position: 'left',
-                                        id: 'y-axis-1',
-                                        scaleLabel: {
-                                            display: true,
-                                            labelString: 'Receita Líquida / Custo Fixo Médio'
-                                        },
-                                        ticks: {
-                                            beginAtZero: true,
-                                            callback: function(value, index, values) {
-                                                return 'R$' + value.toFixed(2);
-                                            }
-                                        }
-                                    }]
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                legend: {
+                                    position: 'top',
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Performance Comercial'
+                                    text: 'Receita líquida por mês'
                                 },
-                                plugins: {
-                                    legend: {
-                                        labels: {
-                                            generateLabels: function(chart) {
-                                                var data = chart.data;
-                                                if (data.labels.length && data.datasets.length) {
-                                                    return data.datasets.map(function(dataset, i) {
-                                                        // Add label for revenue data
-                                                        return {
-                                                            text: dataset.label,
-                                                            fillStyle: dataset.backgroundColor,
-                                                            strokeStyle: dataset.borderColor,
-                                                            lineWidth: dataset.borderWidth,
-                                                            hidden: dataset.hidden,
-                                                            index: i
-                                                        };
-                                                    });
-                                                }
-                                                return [];
-                                            }
+                                scales: {
+                                    yAxes: [{
+                                        ticks: {
+                                            beginAtZero: true,
+                                            max: 32000,
+                                            stepSize: 4000
+                                        },
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: 'Receita líquida (R$)'
                                         }
-                                    }
+                                    }],
+                                    xAxes: [{
+                                        barPercentage: 0.8,
+                                        offset: true,
+                                        scaleLabel: {
+                                            display: true,
+                                            labelString: 'Mês/Ano'
+                                        }
+                                    }]
                                 }
                             }
+                        };
+
+                        // Agregar una línea para el costo fijo promedio
+                        var custoFixoDataset = {
+                            label: 'Custo fixo médio',
+                            data: Array(uniqueLabels.length).fill(custoFixoMedio),
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            type: 'line',
+                            yAxisID: 'custoFixoAxis'
+                        };
+                        config.data.datasets.push(custoFixoDataset);
+
+                        // Agregar un eje y para el costo fijo promedio
+                        config.options.scales.yAxes.push({
+                            id: 'custoFixoAxis',
+                            position: 'right',
+                            ticks: {
+                                min: 0,
+                                max: 2 * custoFixoMedio,
+                                stepSize: custoFixoMedio
+                            },
+                            gridLines: {
+                                drawOnChartArea: false
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Custo fixo médio (R$)'
+                            }
+                        });
+
+                        // Crear el gráfico
+                        var ctx = document.getElementById('grafico').getContext('2d');
+                        var myChart = new Chart(ctx, config);
+                    }
+                });
+
+            });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            $('#form-pizza').on('submit', function(event) {
+                event.preventDefault();
+                var formData = $(this).serialize();
+
+                $.ajax({
+                    method: 'POST',
+                    url: '{{ route("pizza") }}',
+                    data: formData,
+                    success: function(response) {
+                        console.log(response);
+                        $('#relatorioTable').hide();
+                        $('#graficoConsultores').hide();
+                        $('#graficoPizza').show();
+
+                        var results = response.results;
+
+                        // Generate an array of labels and values for each consultant
+                        var labels = [];
+                        var values = [];
+                        results.forEach(function(result) {
+                            labels.push(result.consultor);
+                            values.push(result.receitaLiquida);
+                        });
+
+                        // Generate an array of random colors for each dataset
+                        var colors = [];
+                        for (var i = 0; i < labels.length; i++) {
+                            colors.push(getRandomColor());
+                        }
+
+                        // Create the data object for the chart
+                        var data = {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                backgroundColor: colors
+                            }]
+                        };
+
+                        // Create the options object for the chart
+                        var options = {};
+
+                        // Create the chart
+                        var ctx = document.getElementById('myPizzaChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'pie',
+                            data: data,
+                            options: options
                         });
                     },
                     error: function(xhr) {
@@ -508,6 +556,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
             });
         });
 
+        // Function to generate a random color
         function getRandomColor() {
             var letters = '0123456789ABCDEF';
             var color = '#';
@@ -517,76 +566,6 @@ CAOL - Controle de Atividades Online - Agence Interativa
             return color;
         }
     </script>
-
-<script>
-    $(document).ready(function() {
-        $('#form-pizza').on('submit', function(event) {
-            event.preventDefault();
-            var formData = $(this).serialize();
-
-            $.ajax({
-                method: 'POST',
-                url: '{{ route("pizza") }}',
-                data: formData,
-                success: function(response) {
-                    console.log(response);
-                    $('#relatorioTable').hide();
-                    $('#graficoConsultores').hide();
-                    $('#graficoPizza').show();
-
-                    var results = response.results;
-
-                    // Generate an array of labels and values for each consultant
-                    var labels = [];
-                    var values = [];
-                    results.forEach(function(result) {
-                        labels.push(result.consultor);
-                        values.push(result.receitaLiquida);
-                    });
-
-                    // Generate an array of random colors for each dataset
-                    var colors = [];
-                    for (var i = 0; i < labels.length; i++) {
-                        colors.push(getRandomColor());
-                    }
-
-                    // Create the data object for the chart
-                    var data = {
-                        labels: labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: colors
-                        }]
-                    };
-
-                    // Create the options object for the chart
-                    var options = {};
-
-                    // Create the chart
-                    var ctx = document.getElementById('myPizzaChart').getContext('2d');
-                    new Chart(ctx, {
-                        type: 'pie',
-                        data: data,
-                        options: options
-                    });
-                },
-                error: function(xhr) {
-                    console.log(xhr.responseText);
-                }
-            });
-        });
-    });
-
-    // Function to generate a random color
-    function getRandomColor() {
-        var letters = '0123456789ABCDEF';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-        }
-        return color;
-    }
-</script>
 
 
     @endsection

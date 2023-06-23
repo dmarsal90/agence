@@ -1,4 +1,9 @@
 .custom-btn-size {
-  width: 150px;
-  height: 40px;
+    width: 150px;
+    height: 40px;
+}
+
+#grafico, #myPizzaChart {
+    max-height: 600px;
+    max-width: 1200px;
 }
