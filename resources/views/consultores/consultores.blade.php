@@ -354,7 +354,7 @@ CAOL - Controle de Atividades Online - Agence Interativa
                             var row = $('<tr>');
                             $('<td>').html(result.consultor.no_usuario).appendTo(row);
                             $('<td>').html(result.comissao).appendTo(row);
-                            $('<td>').html(result.custoFixo).appendTo(row);
+                            $('<td>').html(result.custoFixo ? result.custoFixo : 0).appendTo(row);
                             $('<td>').html(result.lucro).appendTo(row);
                             $('<td>').html(result.receitaLiquida).appendTo(row);
                             $('#relatorioTable tbody').append(row);
