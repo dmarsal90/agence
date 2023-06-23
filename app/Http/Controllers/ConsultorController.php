@@ -24,12 +24,43 @@ class ConsultorController extends Controller
         return view('consultores/consultores', compact('consultors'));
     }
 
+    private function recietaLiquida($consultor, $fechaInicio, $fechaFin)
+    {
+        $receitaLiquida = DB::table('cao_fatura')
+    ->join('cao_os', 'cao_fatura.co_os', '=', 'cao_os.co_os')
+    ->join('cao_usuario', 'cao_os.co_usuario', '=', 'cao_usuario.co_usuario')
+    ->where('cao_os.co_usuario', '=', $consultor)
+    ->whereBetween(DB::raw('DATE_FORMAT(cao_fatura.data_emissao, "%Y-%m")'), [$fechaInicio, $fechaFin])
+    ->select(DB::raw('cao_usuario.no_usuario AS consultor, DATE_FORMAT(cao_fatura.data_emissao, "%Y-%m") AS mes, SUM(cao_fatura.valor * (1 - cao_fatura.total_imp_inc / 100)) AS receitaLiquida'))
+    ->groupBy('consultor', 'mes')
+    ->get();
+
+$result = [];
+foreach ($receitaLiquida as $item) {
+    $result[] = [
+        'consultor' => $item->consultor,
+        'mes' => $item->mes,
+        'receitaLiquida' => $item->receitaLiquida
+    ];
+}
+
+return $result;
+    }
+
+    private function costoFijo($consultor)
+    {
+        $custoFixo = DB::table('CAO_SALARIO')
+            ->where('CO_USUARIO', '=', $consultor)
+            ->value('BRUT_SALARIO');
+
+        return $custoFixo;
+    }
+
     public function consultoresRelatorio(Request $request)
     {
         // Obtener el valor del campo oculto para los valores seleccionados en el select
         $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
 
-
         $mesInicio = $request->input('mesInicio');
         $anioInicio = $request->input('anioInicio');
         $mesFin = $request->input('mesFin');
@@ -40,116 +71,110 @@ class ConsultorController extends Controller
 
         // Calcular los resultados para cada consultor
         $results = [];
-        foreach ($consultoresDisponiveisArray as $consultor) {
-            $result = [];
+        if (!empty($consultoresDisponiveisArray)) {
+            foreach ($consultoresDisponiveisArray as $consultor) {
+                $result = [];
 
-            // Obtener la receita líquida
-            $receitaLiquida = DB::table('CAO_FATURA')
-                ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
-                ->where('CAO_OS.CO_USUARIO', '=', $consultor)
-                ->whereBetween(DB::raw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m")'), [$fechaInicio, $fechaFin])
-                ->select(DB::raw('SUM(CAO_FATURA.VALOR * (1 - CAO_FATURA.TOTAL_IMP_INC / 100)) AS receitaLiquida'))
-                ->value('receitaLiquida');
+                // Obtener todas las receitas líquidas del consultor en el rango de fechas
+                $receitaLiquida = $this->recietaLiquida($consultor, $fechaInicio, $fechaFin);
+                $totalReceitaLiquida = 0;
+                foreach ($receitaLiquida as $item) {
+                    $totalReceitaLiquida += $item['receitaLiquida'];
+                }
 
-            // Obtener el costo fijo
-            $custoFixo = DB::table('CAO_SALARIO')
-                ->where('CO_USUARIO', '=', $consultor)
-                ->value('BRUT_SALARIO');
+                // Obtener el nombre del consultor
+                $nombreConsultor = CaoUsuario::find($consultor);
 
-            // Obtener la comisión
-            $comissao = DB::table('CAO_FATURA')
-                ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
-                ->where('CAO_OS.CO_USUARIO', '=', $consultor)
-                ->whereRaw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m") BETWEEN ? AND ?', [$fechaInicio, $fechaFin])
-                ->select(DB::raw('SUM((CAO_FATURA.VALOR - (CAO_FATURA.VALOR * CAO_FATURA.total_imp_inc/100)) * CAO_FATURA.COMISSAO_CN/100) AS total_comissao'))
-                ->value('total_comissao');
+                // Obtener el costo fijo
+                $custoFixo = $this->costoFijo($consultor);
 
-            // Calcular el lucro
-            $lucro = $receitaLiquida - $custoFixo - $comissao;
+                // Obtener la comisión
+                $comissao = DB::table('CAO_FATURA')
+                    ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
+                    ->where('CAO_OS.CO_USUARIO', '=', $consultor)
+                    ->whereRaw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m") BETWEEN ? AND ?', [$fechaInicio, $fechaFin])
+                    ->select(DB::raw('COALESCE(SUM((CAO_FATURA.VALOR - (CAO_FATURA.VALOR * CAO_FATURA.total_imp_inc/100)) * CAO_FATURA.COMISSAO_CN/100), 0) AS total_comissao'))
+                    ->value('total_comissao');
 
-            // Agregar los resultados al arreglo
-            $result['consultor'] = CaoUsuario::find($consultor);
-            $result['receitaLiquida'] = $receitaLiquida;
-            $result['custoFixo'] = $custoFixo;
-            $result['comissao'] = $comissao;
-            $result['lucro'] = $lucro;
-            $results[] = $result;
+                // Calcular el lucro
+                $lucro = $totalReceitaLiquida - $custoFixo - $comissao;
+
+                // Agregar los resultados al arreglo
+                $result['consultor'] = $nombreConsultor;
+                $result['receitaLiquida'] = $totalReceitaLiquida;
+                $result['custoFixo'] = $custoFixo;
+                $result['comissao'] = $comissao;
+                $result['lucro'] = $lucro;
+                $results[] = $result;
+            }
         }
-
 
         return response()->json(['results' => $results]);
     }
 
     public function graficoConsultores(Request $request)
-    {
-        $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
+{
+    $consultoresDisponiveisArray = json_decode($request->input('consultores_disponibles')[0], true);
 
+    $mesInicio = $request->input('mesInicio');
+    $anioInicio = $request->input('anioInicio');
+    $mesFin = $request->input('mesFin');
+    $anioFin = $request->input('anioFin');
 
-        $mesInicio = $request->input('mesInicio');
-        $anioInicio = $request->input('anioInicio');
-        $mesFin = $request->input('mesFin');
-        $anioFin = $request->input('anioFin');
+    $fechaInicio = $anioInicio . '-' . $mesInicio;
+    $fechaFin = $anioFin . '-' . $mesFin;
 
-        $fechaInicio = $anioInicio . '-' . $mesInicio;
-        $fechaFin = $anioFin . '-' . $mesFin;
+    // Calcular los resultados para cada consultor
+    $results = [];
+    $totalCustoFixo = 0;
+    if ($consultoresDisponiveisArray) {
+        foreach ($consultoresDisponiveisArray as $consultor) {
+            $result = [];
 
+            // Obtener la receita líquida
+            $receitaLiquida = $this->recietaLiquida($consultor, $fechaInicio, $fechaFin);
 
-        // Calcular los resultados para cada consultor
-        $results = [];
-        if ($consultoresDisponiveisArray) {
-            foreach ($consultoresDisponiveisArray as $consultor) {
-                $result = [];
-                $totalCustoFixo = 0;
+            dd($receitaLiquida);
 
-                // Obtener la receita líquida
-                $receitaLiquida = DB::table('CAO_FATURA')
-                    ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
-                    ->where('CAO_OS.CO_USUARIO', '=', $consultor)
-                    ->whereBetween(DB::raw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m")'), [$fechaInicio, $fechaFin])
-                    ->select(DB::raw('SUM(CAO_FATURA.VALOR * (1 - CAO_FATURA.TOTAL_IMP_INC / 100)) AS receitaLiquida'))
-                    ->value('receitaLiquida');
+            $custoFixo = $this->costoFijo($consultor);
 
-                $custoFixo = DB::table('CAO_SALARIO')
-                    ->where('CO_USUARIO', '=', $consultor)
-                    ->value('BRUT_SALARIO');
+            $totalCustoFixo += $custoFixo;
 
-                $totalCustoFixo += $custoFixo;
-                $cantConsultores = count($consultoresDisponiveisArray);
-                $custoFixoMedio = $totalCustoFixo / $cantConsultores;
-
-
-                // Agregar los resultados al arreglo
-                $result['consultor'] = $consultor;
-                $result['receitaLiquida'] = $receitaLiquida;
-                $result['custoFixoMedio'] = $custoFixoMedio;
-                $result['fechaInicio'] = $fechaInicio;
-                $result['fechaFin'] = $fechaFin;
-                $results[] = $result;
-            }
+            // Agregar los resultados al arreglo
+            $result['consultor'] = $consultor;
+            $result['receitaLiquida'] = $receitaLiquida['receitaLiquida'];
+            $result['custoFixo'] = $custoFixo;
+            $result['fechaInicio'] = $fechaInicio;
+            $result['fechaFin'] = $fechaFin;
+            $result['mes']= $receitaLiquida['mes'];
+            $results[] = $result;
         }
-
-        $fechaInicio = date('M Y', strtotime($fechaInicio));
-        $fechaFin = date('M Y', strtotime($fechaFin));
-
-
-        $chartData = [
-            'labels' => [],  // Array to store the labels for X-axis (e.g., months/years)
-            'receitaLiquida' => [],  // Array to store the receitaLiquida values for the bars
-            'custoFixoMedio' => [],  // Array to store the custoFixoMedio values for the line
-            'fechaInicio' => $fechaInicio,
-            'fechaFin' => $fechaFin,
-        ];
-
-
-        // Populate the chartData arrays
-        foreach ($results as $result) {
-            $chartData['labels'][] = $result['consultor'];
-            $chartData['receitaLiquida'][] = $result['receitaLiquida'];
-            $chartData['custoFixoMedio'][] = $result['custoFixoMedio'];
-        }
-
-        return response()->json(['results' => $chartData]);
     }
+
+    $custoFixoMedio = count($consultoresDisponiveisArray) > 0 ? $totalCustoFixo / count($consultoresDisponiveisArray) : 0;
+
+    $fechaInicio = date('M Y', strtotime($fechaInicio));
+    $fechaFin = date('M Y', strtotime($fechaFin));
+
+    $chartData = [
+        'labels' => [],  // Array to store the labels for X-axis (e.g., months/years)
+        'receitaLiquida' => [],  // Array to store the receitaLiquida values for the bars
+        'custoFixoMedio' => $custoFixoMedio,  // Store the average value directly
+        'fechaInicio' => $fechaInicio,
+        'fechaFin' => $fechaFin,
+        'mes' =>[],
+    ];
+
+    // Populate the chartData arrays
+    foreach ($results as $result) {
+        $chartData['labels'][] = $result['consultor'];
+        $chartData['receitaLiquida'][] = $result['receitaLiquida'];
+        $chartData['custoFixo'][] = $result['custoFixo'];
+        $chartData['mes'][] = $result['mes'];
+    }
+
+    return response()->json(['results' => $chartData]);
+}
 
     public function pizzaConsultores(Request $request)
     {
@@ -171,17 +196,12 @@ class ConsultorController extends Controller
             $result = [];
 
             // Obtener la receita líquida
-            $receitaLiquida = DB::table('CAO_FATURA')
-                ->join('CAO_OS', 'CAO_FATURA.CO_OS', '=', 'CAO_OS.CO_OS')
-                ->where('CAO_OS.CO_USUARIO', '=', $consultor)
-                ->whereBetween(DB::raw('DATE_FORMAT(CAO_FATURA.DATA_EMISSAO, "%Y-%m")'), [$fechaInicio, $fechaFin])
-                ->select(DB::raw('SUM(CAO_FATURA.VALOR * (1 - CAO_FATURA.TOTAL_IMP_INC / 100)) AS receitaLiquida'))
-                ->value('receitaLiquida');
+            $receitaLiquida = $this->recietaLiquida($consultor, $fechaInicio, $fechaFin);
 
             // Agregar los resultados al arreglo
-            $consultor=CaoUsuario::find($consultor);
+            $consultor = CaoUsuario::find($consultor);
             $result['consultor'] = $consultor->no_usuario;
-            $result['receitaLiquida'] = $receitaLiquida;
+            $result['receitaLiquida'] = $receitaLiquida['receitaLiquida'];;
 
             $results[] = $result;
         }
