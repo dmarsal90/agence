@@ -42,5 +42,5 @@ CSS
 
 ## Author
 
-- [@dmarsal90](https://www.github.com/dmarsal90)
+- :scroll: [@dmarsal90](https://www.github.com/dmarsal90)
 
