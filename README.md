@@ -7,7 +7,7 @@ Agence company test
 <div align="center">
 <img src="https://raw.githubusercontent.com/dmarsal90/agence/main/public/img/logo.png" alt="logo"/>
 </div>
-
+<br>
 <div align="center">
 <a href="https://github.com/dmarsal90/agence/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/dmarsal90/agence?color=orange"></a>
 </div>
@@ -35,8 +35,8 @@ See [Vite Configuration Reference](https://vitejs.dev/config/).
     
 ## Tech Stack 🛠️
 
-Laravel - Web Framework
-JavaScript 
+Laravel - Web Framework,
+JavaScript,
 CSS
 
 
