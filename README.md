@@ -15,7 +15,7 @@ Agence company test
 Prerequisites 📋
 
 - Composer
-- MySQLSQL
+- MySQL
 - Node
 
 ## Installation 🔧
