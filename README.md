@@ -5,11 +5,11 @@ Agence company test
 
 
 <div align="center">
-![Logo](https://github.com/dmarsal90/agence/blob/main/public/img/logo.png)
+<img src="https://raw.githubusercontent.com/dmarsal90/agence/main/public/img/logo.png" alt="logo"/>
 </div>
 
 <div align="center">
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+<a href="https://github.com/dmarsal90/agence/blob/main/LICENSE"><img alt="GitHub license" src="https://img.shields.io/github/license/dmarsal90/agence?color=orange"></a>
 </div>
 
 Prerequisites 📋
