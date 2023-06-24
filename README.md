@@ -12,7 +12,13 @@ Agence company test
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 </div>
 
-## Installation
+Prerequisites 📋
+
+- Composer
+- MySQLSQL
+- Node
+
+## Installation 🔧
 
 Install agence with composer and npm
 
@@ -22,10 +28,16 @@ Install agence with composer and npm
   composer install
   npm install
 ```
-    
-## Tech Stack
 
-PHP , JS
+## Customize configuration
+
+See [Vite Configuration Reference](https://vitejs.dev/config/).
+    
+## Tech Stack 🛠️
+
+Laravel - Web Framework
+JavaScript 
+CSS
 
 
 ## Author
